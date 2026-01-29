@@ -1,0 +1,7 @@
+- mapstrack 
+- tests
+- docker compose and dockerfile
+- readme for project
+- controller
+- database schema design 
+- api design
