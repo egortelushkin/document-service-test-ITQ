@@ -21,8 +21,6 @@ dependencies {
     // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.kafka:spring-kafka")
 
     runtimeOnly("org.postgresql:postgresql")
 
@@ -42,6 +40,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+
+
+    testImplementation("com.h2database:h2:2.2.220")
+
 }
 
 tasks.test {

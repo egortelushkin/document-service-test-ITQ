@@ -1,14 +1,19 @@
 package com.helloegor03.service;
 
-import com.helloegor03.api.BatchResultDto;
-import com.helloegor03.api.OperationResult;
+import com.helloegor03.Exception.NotFoundException;
+import com.helloegor03.api.*;
 import com.helloegor03.domain.*;
+import com.helloegor03.mapper.DocumentMapper;
+import com.helloegor03.mapper.HistoryMapper;
 import com.helloegor03.repository.ApprovalRegistryRepository;
 import com.helloegor03.repository.DocumentHistoryRepository;
 import com.helloegor03.repository.DocumentRepository;
 import jakarta.persistence.OptimisticLockException;
-import jakarta.transaction.Transactional;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,13 +30,15 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final DocumentHistoryRepository historyRepository;
     private final ApprovalRegistryRepository registryRepository;
+    private final DocumentMapper documentMapper;
+    private final HistoryMapper historyMapper;
 
     @Transactional
-    public Long create(String author, String title) {
-        Document doc = new Document();
+    public Long create(CreateDocumentRequest request) {
+
+        Document doc = documentMapper.fromCreateRequest(request);
+
         doc.setNumber(UUID.randomUUID().toString());
-        doc.setAuthor(author);
-        doc.setTitle(title);
         doc.setStatus(DRAFT);
         doc.setCreatedAt(LocalDateTime.now());
         doc.setUpdatedAt(LocalDateTime.now());
@@ -112,5 +119,60 @@ public class DocumentService {
                     }
                 })
                 .toList();
+    }
+
+    public DocumentWithHistoryResponse getWithHistory(Long id) {
+
+        Document doc = documentRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Document not found"));
+
+        List<DocumentHistory> history =
+                historyRepository.findByDocumentIdOrderByCreatedAtAsc(id);
+
+        return new DocumentWithHistoryResponse(
+                documentMapper.toDto(doc),
+                history.stream().map(historyMapper::toDto).toList()
+        );
+    }
+
+    public Page<DocumentResponse> getBatch(List<Long> ids, Pageable pageable) {
+        return documentRepository.findAllByIdIn(ids, pageable)
+                .map(DocumentResponse::from);
+    }
+
+    public List<BatchResultDto> approveBatch(List<Long> ids, String actor) {
+        return ids.stream()
+                .map(id -> {
+                    try {
+                        return new BatchResultDto(id, approve(id, actor));
+                    } catch (OptimisticLockException e) {
+                        return new BatchResultDto(id, CONFLICT);
+                    } catch (RuntimeException e) {
+                        return new BatchResultDto(id, REGISTRY_ERROR);
+                    }
+                })
+                .toList();
+    }
+
+    public Page<DocumentResponse> search(SearchRequest request, Pageable pageable) {
+        Specification<Document> spec = Specification.where(null);
+
+        if (request.status() != null) {
+            spec = spec.and((root, q, cb) ->
+                    cb.equal(root.get("status"), request.status()));
+        }
+
+        if (request.author() != null) {
+            spec = spec.and((root, q, cb) ->
+                    cb.equal(root.get("author"), request.author()));
+        }
+
+        if (request.from() != null && request.to() != null) {
+            spec = spec.and((root, q, cb) ->
+                    cb.between(root.get("updatedAt"), request.from(), request.to()));
+        }
+
+        return documentRepository.findAll(spec, pageable)
+                .map(DocumentResponse::from);
     }
 }
