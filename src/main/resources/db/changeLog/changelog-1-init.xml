@@ -1,0 +1,58 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd">
+
+    <changeSet id="1" author="egor">
+        <createTable tableName="documents">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="author" type="varchar(255)"/>
+            <column name="title" type="varchar(255)"/>
+            <column name="status" type="varchar(50)"/>
+            <column name="number" type="varchar(50)"/>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+            <column name="version" type="int"/>
+        </createTable>
+
+        <createTable tableName="document_history">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="document_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action" type="varchar(50)"/>
+            <column name="actor" type="varchar(255)"/>
+            <column name="comment" type="varchar(255)"/>
+            <column name="created_at" type="timestamp"/>
+        </createTable>
+
+        <createTable tableName="approval_registry">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="document_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="approved_at" type="timestamp"/>
+        </createTable>
+
+        <createIndex tableName="documents" indexName="idx_documents_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="documents" indexName="idx_documents_author">
+            <column name="author"/>
+        </createIndex>
+        <createIndex tableName="document_history" indexName="idx_history_document">
+            <column name="document_id"/>
+        </createIndex>
+        <createIndex tableName="approval_registry" indexName="idx_registry_document">
+            <column name="document_id"/>
+        </createIndex>
+
+    </changeSet>
+</databaseChangeLog>

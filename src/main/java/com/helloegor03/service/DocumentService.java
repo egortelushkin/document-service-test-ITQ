@@ -9,6 +9,7 @@ import com.helloegor03.repository.ApprovalRegistryRepository;
 import com.helloegor03.repository.DocumentHistoryRepository;
 import com.helloegor03.repository.DocumentRepository;
 import jakarta.persistence.OptimisticLockException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -174,5 +175,56 @@ public class DocumentService {
 
         return documentRepository.findAll(spec, pageable)
                 .map(DocumentResponse::from);
+    }
+
+    // get list of ID'S of doc's by status with limit
+    public List<Long> getDocumentsByStatus(DocumentStatus status, int batchSize) {
+        return documentRepository
+                .findByStatus(status, PageRequest.of(0, batchSize))
+                .stream()
+                .map(Document::getId)
+                .toList();
+    }
+
+    @Transactional
+    public List<Long> submitBatchAtomic(int batchSize, String actor) {
+        List<Long> ids = documentRepository.claimDraftBatch(batchSize);
+
+        for (Long id : ids) {
+            historyRepository.save(new DocumentHistory(
+                    null,
+                    id,
+                    actor,
+                    DocumentAction.SUBMIT,
+                    null,
+                    LocalDateTime.now()
+            ));
+        }
+
+        return ids;
+    }
+
+    @Transactional
+    public List<Long> approveBatchAtomic(int batchSize, String actor) {
+        List<Long> ids = documentRepository.claimSubmittedBatch(batchSize);
+
+        for (Long id : ids) {
+            historyRepository.save(new DocumentHistory(
+                    null,
+                    id,
+                    actor,
+                    DocumentAction.APPROVE,
+                    null,
+                    LocalDateTime.now()
+            ));
+
+            registryRepository.save(new ApprovalRegistry(
+                    null,
+                    id,
+                    LocalDateTime.now()
+            ));
+        }
+
+        return ids;
     }
 }

@@ -30,9 +30,11 @@ public class Document {
     private DocumentStatus status;
 
     @Version
-    private Long version; // для оптимистической блокировки
+    private Long version; // for optimistic locking
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    @Column(name = "locked_at")
+    private LocalDateTime lockedAt;
 
 }
