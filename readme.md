@@ -2,6 +2,16 @@
 
 #### - Как начать использовать ITQ Document Service step by step
 
+## Step 0. Clone repository
+- Clone the repository
+```bash
+git clone https://github.com/egortelushkin/document-service-test-ITQ.git
+```
+- Go to the project folder:
+```bash
+cd document-service-test-ITQ
+```
+
 ## Step one. Start docker compose file
 ```bash
 docker-compose up -- build
